@@ -1,0 +1,63 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: camera-net
+spec:
+  template:
+    metadata:
+      labels:
+        app: nettest
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        streamer: camera
+      containers:
+      - name: cam-net-test
+        image: netperf:latest
+        imagePullPolicy: Never
+        command:
+          - sleep
+          - "1200"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: edge-net
+spec:
+  template:
+    metadata:
+      labels:
+        app: nettest
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        streamer: edge
+      containers:
+      - name: edge-net-test
+        image: netperf:latest
+        imagePullPolicy: Never
+        command:
+          - sleep
+          - "1200"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cloud-net
+spec:
+  template:
+    metadata:
+      labels:
+        app: nettest
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        streamer: cloud
+      containers:
+      - name: cloud-net-test
+        image: netperf:latest
+        imagePullPolicy: Never
+        command:
+          - sleep
+          - "1200"
+

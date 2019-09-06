@@ -1,0 +1,122 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: split-nne-0
+spec:
+  template:
+    metadata:
+      labels:
+        app: split-nne
+        function: camera
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        saf: camera
+      containers:
+      - name: camera
+        image: saf:split_nne
+        volumeMounts:
+          - mountPath: /saf/video.mp4
+            name: video
+        resources:
+          limits:
+            cpu: "2"
+            memory: "1Gi" 
+        command:
+          - ./apps/split_nne_rpc/camera_rpc
+          - -c 
+          - file
+          - -t
+          - "100"
+          - -p
+          - "$(SVC_NNE_1_SERVICE_HOST):$(SVC_NNE_1_SERVICE_PORT)"
+      volumes:
+      - name: video
+        hostPath: 
+          path: /home/nosus/tile_lost_panda.mp4
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-nne-1
+spec:
+  selector:
+    app: split-nne
+    function: nne1
+  ports:
+    - protocol: TCP
+      port: 5535
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: split-nne-1
+spec:
+  template:
+    metadata:
+      labels:
+        app: split-nne
+        function: nne1
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        saf: edge
+      containers:
+      - name: nne1
+        image: saf:split_nne
+        command:
+          - ./apps/split_nne_rpc/nne1_nocam
+          - -n 
+          - inception_resnet_v2
+          - -i 
+          - input
+          - -o
+          - BREAKPOINT
+          - -t
+          - "100"
+          - -s
+          - 0.0.0.0:5535
+          - -p
+          - "$(SVC_NNE_2_SERVICE_HOST):$(SVC_NNE_2_SERVICE_PORT)"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-nne-2
+spec:
+  selector:
+    app: split-nne
+    function: nne2
+  ports:
+    - protocol: TCP
+      port: 5536
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: split-nne-2
+spec:
+  template:
+    metadata:
+      labels:
+        app: split-nne
+        function: nne2
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        saf: cloud
+      containers:
+      - name: nne2
+        image: saf:split_nne
+        command:
+          - ./apps/split_nne_rpc/nne2
+          - -i
+          - BREAKPOINT
+          - -o
+          - InceptionResnetV2/Logits/Predictions
+          - -n
+          - inception_resnet_v2
+          - -s
+          - 0.0.0.0:5536
+          - -t
+          - "110"
